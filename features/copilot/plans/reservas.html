@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reservar sala - Sistema de Reservas</title>
+  <style>
+    :root{--accent:#2b7a78;--muted:#6b7280}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;line-height:1.4;margin:0;background:#f7faf9;color:#0f172a}
+    .container{max-width:900px;margin:48px auto;padding:24px;background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(2,6,23,0.06)}
+    h1{margin-top:0;color:var(--accent)}
+    form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:8px;font-size:15px}
+    textarea{resize:vertical}
+    .full{grid-column:1/ -1}
+    .actions{display:flex;gap:12px;align-items:center}
+    button{background:var(--accent);color:white;border:0;padding:10px 16px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#eef2f2;color:var(--accent);border:1px solid #dbe6e6}
+    .note{font-size:13px;color:var(--muted);margin-top:8px}
+    .list{margin-top:18px}
+    .reservation{border-left:4px solid var(--accent);padding:10px 12px;margin-bottom:8px;background:#fbfffe;border-radius:6px}
+    .error{color:#b91c1c;font-size:13px}
+    @media(max-width:720px){form{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Reservar sala de reuniones</h1>
+    <p class="note">Rellena los datos para reservar una sala. Esta página hace un intento de enviar los datos a <code>/api/reservations</code>. Si no existe backend, guarda localmente en tu navegador.</p>
+
+    <form id="reservationForm">
+      <div>
+        <label for="room">Sala</label>
+        <select id="room" name="room" required>
+          <option value="">-- Seleccionar sala --</option>
+          <option value="Sala A">Sala A — Planta baja (8 pers.)</option>
+          <option value="Sala B">Sala B — 2º piso (6 pers.)</option>
+          <option value="Sala C">Sala C — Videoconferencia (10 pers.)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="date">Fecha</label>
+        <input id="date" name="date" type="date" required />
+      </div>
+
+      <div>
+        <label for="start">Hora inicio</label>
+        <input id="start" name="start" type="time" required />
+      </div>
+
+      <div>
+        <label for="end">Hora fin</label>
+        <input id="end" name="end" type="time" required />
+      </div>
+
+      <div class="full">
+        <label for="title">Título / Motivo</label>
+        <input id="title" name="title" type="text" placeholder="Reunión de proyecto" required />
+      </div>
+
+      <div>
+        <label for="name">Tu nombre</label>
+        <input id="name" name="name" type="text" placeholder="Ej. Ana Pérez" required />
+      </div>
+
+      <div>
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" placeholder="ejemplo@dominio.com" required />
+      </div>
+
+      <div class="full">
+        <label for="notes">Notas / requisitos</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Proyector, videollamada, catering... (opcional)"></textarea>
+      </div>
+
+      <div class="full actions">
+        <button type="submit">Reservar</button>
+        <button type="button" class="secondary" id="showList">Ver reservas locales</button>
+        <div id="msg" style="margin-left:auto"></div>
+      </div>
+    </form>
+
+    <section class="list" id="reservationsList" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const form = document.getElementById('reservationForm');
+    const msg = document.getElementById('msg');
+    const list = document.getElementById('reservationsList');
+    const STORAGE_KEY = 'sistema_reservas_local';
+
+    function showMessage(text, isError = false){
+      msg.textContent = text;
+      msg.className = isError ? 'error' : '';
+      setTimeout(()=>{ if(msg.textContent===text) msg.textContent=''; }, 4000);
+    }
+
+    function loadLocal(){
+      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch(e){ return []; }
+    }
+    function saveLocal(items){ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+
+    function renderList(){
+      const items = loadLocal();
+      if(!items.length){ list.innerHTML = '<p class="note">No hay reservas locales guardadas.</p>'; return; }
+      list.innerHTML = items.map(it=>`
+        <div class="reservation">
+          <strong>${escapeHtml(it.title)}</strong> — ${escapeHtml(it.room)}<br>
+          <small>${escapeHtml(it.date)} ${escapeHtml(it.start)} - ${escapeHtml(it.end)}</small>
+          <div>${escapeHtml(it.name)} • ${escapeHtml(it.email)}</div>
+          ${it.notes ? `<div class="note">${escapeHtml(it.notes)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(s){ return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+    }
+
+    document.getElementById('showList').addEventListener('click', ()=>{
+      renderList();
+      list.scrollIntoView({behavior:'smooth'});
+    });
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      // Simple validation: end > start
+      if(data.end <= data.start){ showMessage('La hora de fin debe ser posterior a la de inicio', true); return; }
+
+      // Try to send to backend
+      try{
+        const res = await fetch('/api/reservations', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)
+        });
+        if(res.ok){
+          showMessage('Reserva enviada al servidor ✔');
+          form.reset();
+          // optionally refresh list
+          return;
+        } else {
+          // server returned error: fallback to local
+          const text = await res.text();
+          console.warn('Backend error:', res.status, text);
+          fallbackSave(data);
+          showMessage('Backend respondió con error. Reserva guardada localmente.');
+        }
+      }catch(err){
+        console.warn('No se pudo contactar con backend:', err);
+        fallbackSave(data);
+        showMessage('No se pudo contactar con el servidor. Reserva guardada localmente.');
+      }
+    });
+
+    function fallbackSave(data){
+      const items = loadLocal();
+      items.push(Object.assign({createdAt:new Date().toISOString()}, data));
+      saveLocal(items);
+      renderList();
+    }
+
+    // render any existing local reservations on load
+    renderList();
+  </script>
+</body>
+</html>
