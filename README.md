@@ -3,7 +3,7 @@
 Prototipo de reservas de espacios con calendario, solicitudes y panel local.
 
 - Repositorio existente reutilizado: `xNicoAshipe/sistema-reservas`.
-- URL pública: `https://nicosys.cl/proyectos/sistema-reservas/`.
+- URL pública: `https://nicosys.cl/sistema-reservas/`.
 - Validación: `npm test`, `npm run lint` y `npm run build`.
 - Publicación: `npx wrangler deploy` usando `wrangler.jsonc`.
 
