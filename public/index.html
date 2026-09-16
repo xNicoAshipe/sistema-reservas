@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f3f5f8" />
+  <meta name="description" content="Sistema compacto para solicitar y administrar reservas de salas y auditorios." />
+  <title>Reservas de Espacios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="/monitor-client.js"></script>
+</head>
+<body>
+  <div class="page-glow glow-one" aria-hidden="true"></div>
+  <div class="page-glow glow-two" aria-hidden="true"></div>
+
+  <div class="app-window">
+    <header class="app-header">
+      <div class="brand-area">
+        <div class="brand-mark" aria-hidden="true">R</div>
+        <div>
+          <strong>Reservas de Espacios</strong>
+          <span>Salas y auditorios</span>
+        </div>
+      </div>
+
+      <nav class="main-nav" aria-label="Navegación principal">
+        <button class="nav-button active" data-view="home">Calendario</button>
+        <button class="nav-button" data-view="spaces">Espacios</button>
+        <button class="nav-button" data-view="suggest">Sugerir horario</button>
+        <button class="nav-button admin-nav" data-view="admin">
+          Administración
+          <span class="pending-dot" id="adminPendingBadge">0</span>
+        </button>
+      </nav>
+
+      <button class="mobile-nav-button" id="mobileNavButton" aria-label="Abrir navegación">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+
+    <main class="app-content">
+      <section class="view active" id="homeView">
+        <div class="page-heading calendar-page-heading">
+          <div>
+            <span class="section-kicker">Vista principal</span>
+            <h1>Calendario de reservas</h1>
+            <p>Agenda semanal de lunes a viernes, organizada por los bloques horarios definidos por Administración.</p>
+          </div>
+          <div class="calendar-toolbar week-toolbar">
+            <select id="calendarRoomSelect" class="control-select" aria-label="Espacio del calendario"></select>
+            <button class="secondary-button icon-week-button" id="calendarPrevWeek" type="button" aria-label="Semana anterior">‹</button>
+            <button class="secondary-button" id="calendarTodayButton" type="button">Esta semana</button>
+            <button class="secondary-button icon-week-button" id="calendarNextWeek" type="button" aria-label="Semana siguiente">›</button>
+          </div>
+        </div>
+
+        <section class="panel calendar-panel">
+          <div class="calendar-legend">
+            <div><span class="legend-dot confirmed"></span>Reserva confirmada</div>
+            <div class="calendar-day-label" id="calendarDayLabel"></div>
+          </div>
+          <div id="calendarBoard" class="calendar-board" aria-label="Agenda semanal de lunes a viernes por bloques horarios"></div>
+        </section>
+
+        <div class="calendar-bottom-row">
+          <section class="panel calendar-summary-panel">
+            <div class="panel-heading">
+              <div><span>Resumen</span><h2>Actividad de la semana</h2></div>
+              <button class="text-button" data-go-view="suggest">Sugerir horario</button>
+            </div>
+            <div class="summary-grid compact-summary">
+              <div class="summary-item"><strong id="todayBookingsCount">0</strong><span>reservas semana</span></div>
+              <div class="summary-item"><strong id="availableSpacesCount">0</strong><span>espacios activos</span></div>
+              <div class="summary-item"><strong id="pendingSuggestionsCount">0</strong><span>pendientes</span></div>
+            </div>
+          </section>
+          <section class="panel next-bookings-panel">
+            <div class="panel-heading"><div><span>Agenda</span><h2>Reservas de la semana</h2></div></div>
+            <div id="scheduleList" class="schedule-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="spacesView">
+        <div class="page-heading">
+          <div>
+            <span class="section-kicker">Salas y auditorios</span>
+            <h1>Espacios disponibles</h1>
+            <p>Selecciona un espacio para sugerir un horario de uso.</p>
+          </div>
+          <button class="primary-button" data-go-view="suggest">Sugerir horario</button>
+        </div>
+
+        <div class="filters-row">
+          <label class="search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+            <input id="spaceSearch" type="search" placeholder="Buscar sala, auditorio o característica" />
+          </label>
+          <select id="capacityFilter" class="control-select" aria-label="Filtrar por capacidad">
+            <option value="0">Cualquier capacidad</option>
+            <option value="4">4+ personas</option>
+            <option value="8">8+ personas</option>
+            <option value="20">20+ personas</option>
+          </select>
+        </div>
+
+        <div id="spacesGrid" class="spaces-grid"></div>
+      </section>
+
+      <section class="view" id="suggestView">
+        <div class="page-heading compact-heading">
+          <div>
+            <span class="section-kicker">Solicitud de uso</span>
+            <h1>Sugerir un horario</h1>
+            <p>Completa los datos. La reserva quedará pendiente de aprobación.</p>
+          </div>
+        </div>
+
+        <div class="request-layout">
+          <form id="suggestionForm" class="request-form panel">
+            <div class="form-grid">
+              <div class="field full-field">
+                <label for="suggestSpace">Sala o auditorio</label>
+                <select id="suggestSpace" name="space" required></select>
+              </div>
+
+              <div class="field">
+                <label for="suggestDate">Fecha</label>
+                <input id="suggestDate" name="date" type="date" required />
+              </div>
+              <div class="field">
+                <label for="suggestAttendees">Personas</label>
+                <input id="suggestAttendees" name="attendees" type="number" min="1" value="2" required />
+              </div>
+              <div class="field full-field">
+                <label for="suggestBlock">Bloque horario</label>
+                <select id="suggestBlock" name="blockId" required></select>
+              </div>
+
+              <div class="field full-field">
+                <label for="suggestTitle">Motivo</label>
+                <input id="suggestTitle" name="title" type="text" placeholder="Ej. Reunión de proyecto" required />
+              </div>
+              <div class="field">
+                <label for="suggestName">Nombre</label>
+                <input id="suggestName" name="name" type="text" placeholder="Nombre del solicitante" required />
+              </div>
+              <div class="field">
+                <label for="suggestEmail">Correo</label>
+                <input id="suggestEmail" name="email" type="email" placeholder="nombre@udec.cl" required />
+              </div>
+              <div class="field full-field">
+                <label for="suggestNotes">Observaciones</label>
+                <textarea id="suggestNotes" name="notes" rows="3" placeholder="Equipamiento, videoconferencia u otra necesidad (opcional)"></textarea>
+              </div>
+            </div>
+
+            <div id="suggestionMessage" class="form-message" aria-live="polite"></div>
+
+            <div class="form-actions">
+              <button type="reset" class="secondary-button">Limpiar</button>
+              <button type="submit" class="primary-button">Enviar solicitud</button>
+            </div>
+          </form>
+
+          <aside class="availability-card panel">
+            <div class="availability-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"></path></svg>
+            </div>
+            <span class="section-kicker">Antes de enviar</span>
+            <h2>Revisa la disponibilidad.</h2>
+            <p>El sistema detectará cruces con reservas ya confirmadas. Administración hará la aprobación final.</p>
+            <div id="requestAvailability" class="request-availability">Selecciona fecha y horario.</div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="adminView">
+        <div class="page-heading admin-heading">
+          <div>
+            <span class="section-kicker">Administración</span>
+            <h1>Panel de administración</h1>
+            <p>Gestiona solicitudes, reservas confirmadas y la configuración de salas y auditorios.</p>
+          </div>
+          <div class="admin-mode">Acceso protegido</div>
+        </div>
+
+        <div class="admin-tabs" id="adminTabs" role="tablist" aria-label="Secciones de administración">
+          <button class="admin-tab active" data-admin-tab="requests" type="button">Solicitudes <span id="adminTabPendingBadge">0</span></button>
+          <button class="admin-tab" data-admin-tab="spaces" type="button">Espacios</button>
+          <button class="admin-tab" data-admin-tab="blocks" type="button">Bloques horarios</button>
+          <button class="admin-tab" data-admin-tab="bookings" type="button">Reservas</button>
+        </div>
+
+        <section class="admin-subview active" id="adminRequestsTab">
+          <div class="admin-stats">
+            <div><strong id="adminPendingCount">0</strong><span>Pendientes</span></div>
+            <div><strong id="adminApprovedCount">0</strong><span>Aprobadas</span></div>
+            <div><strong id="adminRejectedCount">0</strong><span>Rechazadas</span></div>
+          </div>
+          <div class="admin-filter-row">
+            <div class="segmented-control" id="adminFilter">
+              <button class="active" data-status="pending">Pendientes</button>
+              <button data-status="approved">Aprobadas</button>
+              <button data-status="rejected">Rechazadas</button>
+              <button data-status="all">Todas</button>
+            </div>
+          </div>
+          <div id="adminRequests" class="admin-requests"></div>
+        </section>
+
+        <section class="admin-subview" id="adminSpacesTab">
+          <div class="admin-section-heading">
+            <div><h2>Gestionar espacios</h2><p>Cambia nombres, tipo, capacidad, ubicación y características. También puedes crear nuevos espacios.</p></div>
+            <button class="primary-button" id="addSpaceButton" type="button">+ Agregar espacio</button>
+          </div>
+          <div id="adminSpacesList" class="admin-spaces-list"></div>
+        </section>
+
+
+        <section class="admin-subview" id="adminBlocksTab">
+          <div class="admin-section-heading">
+            <div><h2>Bloques horarios</h2><p>Define los tramos que aparecerán en el calendario y que podrán solicitar los usuarios.</p></div>
+            <button class="primary-button" id="addBlockButton" type="button">+ Agregar bloque</button>
+          </div>
+          <div class="blocks-help panel">El calendario siempre muestra <strong>lunes a viernes</strong>. Los bloques activos se ordenan automáticamente por hora de inicio.</div>
+          <div id="adminBlocksList" class="admin-blocks-list"></div>
+        </section>
+        <section class="admin-subview" id="adminBookingsTab">
+          <div class="admin-section-heading">
+            <div><h2>Reservas confirmadas</h2><p>Consulta y administra las reservas que ya fueron aprobadas.</p></div>
+            <input id="adminBookingsDate" class="date-input" type="date" aria-label="Filtrar reservas por fecha" />
+          </div>
+          <div id="adminBookingsList" class="admin-requests"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

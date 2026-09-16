@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nicosys-sistema-reservas",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-16",
+  "workers_dev": false,
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  },
+  "routes": [
+    { "pattern": "nicosys.cl/sistema-reservas", "zone_name": "nicosys.cl" },
+    { "pattern": "nicosys.cl/sistema-reservas/*", "zone_name": "nicosys.cl" },
+    { "pattern": "www.nicosys.cl/sistema-reservas", "zone_name": "nicosys.cl" },
+    { "pattern": "www.nicosys.cl/sistema-reservas/*", "zone_name": "nicosys.cl" },
+    { "pattern": "nicosys.cl/proyectos/sistema-reservas", "zone_name": "nicosys.cl" },
+    { "pattern": "nicosys.cl/proyectos/sistema-reservas/*", "zone_name": "nicosys.cl" },
+    { "pattern": "www.nicosys.cl/proyectos/sistema-reservas", "zone_name": "nicosys.cl" },
+    { "pattern": "www.nicosys.cl/proyectos/sistema-reservas/*", "zone_name": "nicosys.cl" }
+  ]
+}
